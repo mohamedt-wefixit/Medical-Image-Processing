@@ -1,0 +1,40 @@
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Generated datasets
+synthetic_dataset/
+real_*/
+
+# Sample files
+sample_brain.nii.gz
+
+# Log files
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*~ 
