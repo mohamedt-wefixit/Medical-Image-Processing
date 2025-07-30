@@ -1,6 +1,6 @@
 # Medical Image Dataset Generator
 
-Generate synthetic training data from NIfTI medical images.
+Generate synthetic training data from NIfTI medical images using realistic random transformations.
 
 ## Usage
 
@@ -15,16 +15,29 @@ python medical_image_generator.py --directory "MM-WHS 2017 Dataset"
 
 - Single file solution
 - YAML configuration
-- Extended rotations up to ±90°
-- Translations up to ±20mm
+- Realistic mode with random transformations
+- Configurable rotation and translation ranges
+- Random DOF (degrees of freedom) modification per variant
 - Batch processing
 - Output validation
 
 ## Configuration
 
-Edit `config.yaml` to customize parameters.
+Edit `config.yaml` to customize parameters:
 
-Generates ~145 variants per input file.
+- `rotation_range`: Range for random rotations (degrees)
+- `translation_range`: Range for random translations (mm) 
+- `variants_per_image`: Number of variants to generate per input
+- `min_dof_modified`: Minimum DOF to modify per variant
+- `max_dof_modified`: Maximum DOF to modify per variant
+
+## Realistic Mode
+
+The generator creates realistic transformations by:
+- Randomly selecting 1-6 DOF to modify per variant
+- Applying random rotations and translations within specified ranges
+- Each variant modifies a different combination of axes
+- Preserves original image characteristics while creating diversity
 
 ## Dataset Processing
 

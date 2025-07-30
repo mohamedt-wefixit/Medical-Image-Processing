@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 import os
 import sys
@@ -38,23 +37,11 @@ def load_config(config_path: str = "config.yaml") -> Dict:
         'output_dir': 'synthetic_dataset',
         'log_level': 'INFO',
         'transformations': {
-            'rotations': {
-                'x_axis': [-45, -30, -15, -10, -5, 5, 10, 15, 30, 45],
-                'y_axis': [-45, -30, -15, -10, -5, 5, 10, 15, 30, 45],
-                'z_axis': [-45, -30, -15, -10, -5, 5, 10, 15, 30, 45]
-            },
-            'translations': {
-                'x_axis': [-20, -15, -10, -5, 5, 10, 15, 20],
-                'y_axis': [-20, -15, -10, -5, 5, 10, 15, 20],
-                'z_axis': [-20, -15, -10, -5, 5, 10, 15, 20]
-            },
-            'combined': [
-                {'rotation': [30, 15, -20], 'translation': [5, -10, 8]},
-                {'rotation': [-25, 20, 10], 'translation': [-8, 5, -15]},
-                {'rotation': [40, -10, 25], 'translation': [12, -5, 10]},
-                {'rotation': [-35, 25, -15], 'translation': [-10, 15, -12]},
-                {'rotation': [20, -30, 35], 'translation': [8, -12, 5]}
-            ]
+            'rotation_range': [-180, 180],
+            'translation_range': [-30, 30],
+            'variants_per_image': 5,
+            'min_dof_modified': 1,
+            'max_dof_modified': 6
         },
         'dataset': {
             'extensions': ['.nii', '.nii.gz'],
@@ -139,58 +126,37 @@ class MedicalImageProcessor:
     def generate_transformations(self) -> List[Dict]:
         transformations = []
         
-        if self.config['transformations'].get('continuous_mode', False):
-            num_variants = self.config['transformations'].get('num_variants', 200)
-            rot_range = self.config['transformations']['rotation_range']
-            trans_range = self.config['transformations']['translation_range']
+        variants_per_image = self.config['transformations']['variants_per_image']
+        rot_range = self.config['transformations']['rotation_range']
+        trans_range = self.config['transformations']['translation_range']
+        min_dof = self.config['transformations']['min_dof_modified']
+        max_dof = self.config['transformations']['max_dof_modified']
+        
+        np.random.seed(42)
+        
+        for i in range(variants_per_image):
+            num_dof_to_modify = np.random.randint(min_dof, max_dof + 1)
             
-            np.random.seed(42)
+            rotation = [0.0, 0.0, 0.0]
+            translation = [0.0, 0.0, 0.0]
             
-            for i in range(num_variants):
-                rotation = [
-                    np.random.uniform(rot_range[0], rot_range[1]),
-                    np.random.uniform(rot_range[0], rot_range[1]),
-                    np.random.uniform(rot_range[0], rot_range[1])
-                ]
-                translation = [
-                    np.random.uniform(trans_range[0], trans_range[1]),
-                    np.random.uniform(trans_range[0], trans_range[1]),
-                    np.random.uniform(trans_range[0], trans_range[1])
-                ]
-                transformations.append({
-                    'rotation': rotation,
-                    'translation': translation,
-                    'description': f'Random transform {i+1:03d}'
-                })
-            return transformations
-        
-        for axis, angles in self.config['transformations']['rotations'].items():
-            axis_idx = {'x_axis': 0, 'y_axis': 1, 'z_axis': 2}[axis]
-            for angle in angles:
-                rotation = [0, 0, 0]
-                rotation[axis_idx] = angle
-                transformations.append({
-                    'rotation': rotation,
-                    'translation': [0, 0, 0],
-                    'description': f'{axis} rotation {angle}°'
-                })
-        
-        for axis, distances in self.config['transformations']['translations'].items():
-            axis_idx = {'x_axis': 0, 'y_axis': 1, 'z_axis': 2}[axis]
-            for distance in distances:
-                translation = [0, 0, 0]
-                translation[axis_idx] = distance
-                transformations.append({
-                    'rotation': [0, 0, 0],
-                    'translation': translation,
-                    'description': f'{axis} translation {distance}mm'
-                })
-        
-        for i, combined in enumerate(self.config['transformations']['combined']):
+            dof_indices = np.random.choice(6, num_dof_to_modify, replace=False)
+            modified_dof = []
+            
+            for dof_idx in dof_indices:
+                if dof_idx < 3:
+                    rotation[dof_idx] = np.random.uniform(rot_range[0], rot_range[1])
+                    modified_dof.append(f"R{['X','Y','Z'][dof_idx]}")
+                else:
+                    translation[dof_idx - 3] = np.random.uniform(trans_range[0], trans_range[1])
+                    modified_dof.append(f"T{['X','Y','Z'][dof_idx - 3]}")
+            
             transformations.append({
-                'rotation': combined['rotation'],
-                'translation': combined['translation'],
-                'description': f'Combined transform {i+1}'
+                'rotation': rotation,
+                'translation': translation,
+                'description': f'Variant {i+1}: {"/".join(modified_dof)} modified',
+                'modified_dof': num_dof_to_modify,
+                'dof_list': modified_dof
             })
         
         return transformations
@@ -410,7 +376,7 @@ def find_nifti_files(directory: str) -> List[str]:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Medical Image Synthetic Dataset Generator',
+        description='Medical Image Synthetic Dataset Generator - Realistic Mode Only',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -419,6 +385,9 @@ Examples:
   python medical_image_generator.py file1.nii.gz file2.nii
   python medical_image_generator.py --directory /path/to/nifti/files
   python medical_image_generator.py --config custom_config.yaml file.nii.gz
+
+Note: This generator only supports realistic mode with random transformations.
+Configure rotation_range, translation_range, and variants_per_image in config.yaml
         """
     )
     
