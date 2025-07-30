@@ -139,6 +139,31 @@ class MedicalImageProcessor:
     def generate_transformations(self) -> List[Dict]:
         transformations = []
         
+        if self.config['transformations'].get('continuous_mode', False):
+            num_variants = self.config['transformations'].get('num_variants', 200)
+            rot_range = self.config['transformations']['rotation_range']
+            trans_range = self.config['transformations']['translation_range']
+            
+            np.random.seed(42)
+            
+            for i in range(num_variants):
+                rotation = [
+                    np.random.uniform(rot_range[0], rot_range[1]),
+                    np.random.uniform(rot_range[0], rot_range[1]),
+                    np.random.uniform(rot_range[0], rot_range[1])
+                ]
+                translation = [
+                    np.random.uniform(trans_range[0], trans_range[1]),
+                    np.random.uniform(trans_range[0], trans_range[1]),
+                    np.random.uniform(trans_range[0], trans_range[1])
+                ]
+                transformations.append({
+                    'rotation': rotation,
+                    'translation': translation,
+                    'description': f'Random transform {i+1:03d}'
+                })
+            return transformations
+        
         for axis, angles in self.config['transformations']['rotations'].items():
             axis_idx = {'x_axis': 0, 'y_axis': 1, 'z_axis': 2}[axis]
             for angle in angles:

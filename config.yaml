@@ -2,27 +2,32 @@ output_dir: "synthetic_dataset"
 log_level: "INFO"
 
 transformations:
+  continuous_mode: true
+  rotation_range: [-180, 180]
+  translation_range: [-30, 30]
+  num_variants: 200
+  
   rotations:
-    x_axis: [-90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90]
-    y_axis: [-90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90] 
-    z_axis: [-90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90]
+    x_axis: [-180, -135, -90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90, 135, 180]
+    y_axis: [-180, -135, -90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90, 135, 180] 
+    z_axis: [-180, -135, -90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90, 135, 180]
   
   translations:
-    x_axis: [-20, -15, -10, -5, 5, 10, 15, 20]
-    y_axis: [-20, -15, -10, -5, 5, 10, 15, 20]
-    z_axis: [-20, -15, -10, -5, 5, 10, 15, 20]
+    x_axis: [-30, -25, -20, -15, -10, -5, 5, 10, 15, 20, 25, 30]
+    y_axis: [-30, -25, -20, -15, -10, -5, 5, 10, 15, 20, 25, 30]
+    z_axis: [-30, -25, -20, -15, -10, -5, 5, 10, 15, 20, 25, 30]
   
   combined:
-    - rotation: [30, 15, -20]
-      translation: [5, -10, 8]
-    - rotation: [-25, 20, 10]
-      translation: [-8, 5, -15]
-    - rotation: [40, -10, 25]
-      translation: [12, -5, 10]
-    - rotation: [-35, 25, -15]
-      translation: [-10, 15, -12]
-    - rotation: [20, -30, 35]
-      translation: [8, -12, 5]
+    - rotation: [45, 30, -60]
+      translation: [15, -20, 12]
+    - rotation: [-90, 45, 30]
+      translation: [-18, 10, -25]
+    - rotation: [120, -45, 75]
+      translation: [22, -15, 18]
+    - rotation: [-135, 90, -30]
+      translation: [-25, 28, -20]
+    - rotation: [60, -120, 135]
+      translation: [18, -25, 15]
 
 dataset:
   extensions: [".nii", ".nii.gz"]
