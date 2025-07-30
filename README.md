@@ -1,30 +1,35 @@
-# Medical Image Synthetic Dataset Generator
+# Medical Image Dataset Generator
 
-Generates synthetic training datasets by modifying orientation and position parameters in NIfTI medical imaging files.
+Generate synthetic training data from NIfTI medical images.
 
-## Setup and Usage
-
-```bash
-# 1. First time setup
-python3 start.py
-
-# 2. Activate environment  
-source venv/bin/activate
-
-# 3. Process your files
-python synthetic_dataset_generator.py your_file.nii.gz
-```
-
-## Quick Test
+## Usage
 
 ```bash
-./quick_test.sh
+python medical_image_generator.py --setup
+python medical_image_generator.py --sample
+python medical_image_generator.py your_file.nii.gz
+python medical_image_generator.py --directory "MM-WHS 2017 Dataset"
 ```
 
-## Process Multiple Files
+## Features
+
+- Single file solution
+- YAML configuration
+- Extended rotations up to ±90°
+- Translations up to ±20mm
+- Batch processing
+- Output validation
+
+## Configuration
+
+Edit `config.yaml` to customize parameters.
+
+Generates ~145 variants per input file.
+
+## Dataset Processing
 
 ```bash
-python synthetic_dataset_generator.py *.nii.gz *.nii
+python medical_image_generator.py --directory "MM-WHS 2017 Dataset"
 ```
 
-Creates 33 synthetic variants per input file with different orientations and translations. 
+Processes all `.nii` and `.nii.gz` files automatically. 

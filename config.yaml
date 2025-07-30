@@ -1,0 +1,37 @@
+output_dir: "synthetic_dataset"
+log_level: "INFO"
+
+transformations:
+  rotations:
+    x_axis: [-90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90]
+    y_axis: [-90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90] 
+    z_axis: [-90, -60, -45, -30, -15, -10, -5, 5, 10, 15, 30, 45, 60, 90]
+  
+  translations:
+    x_axis: [-20, -15, -10, -5, 5, 10, 15, 20]
+    y_axis: [-20, -15, -10, -5, 5, 10, 15, 20]
+    z_axis: [-20, -15, -10, -5, 5, 10, 15, 20]
+  
+  combined:
+    - rotation: [30, 15, -20]
+      translation: [5, -10, 8]
+    - rotation: [-25, 20, 10]
+      translation: [-8, 5, -15]
+    - rotation: [40, -10, 25]
+      translation: [12, -5, 10]
+    - rotation: [-35, 25, -15]
+      translation: [-10, 15, -12]
+    - rotation: [20, -30, 35]
+      translation: [8, -12, 5]
+
+dataset:
+  extensions: [".nii", ".nii.gz"]
+  batch_size: 10
+  validate_outputs: true
+
+sample:
+  enabled: true
+  dimensions: [128, 128, 64]
+  voxel_size: [1.0, 1.0, 1.0]
+  add_noise: true
+  noise_level: 0.1 

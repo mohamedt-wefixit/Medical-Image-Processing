@@ -7,8 +7,22 @@ env/
 synthetic_dataset/
 real_*/
 
-# Sample files
+# Dataset directories
+
+MM-WHS 2017 Dataset/
+*Dataset/
+synthetic_dataset/
+# Sample and test files
 sample_brain.nii.gz
+sample_medical_image.nii.gz
+test_*.nii*
+*_test.nii*
+
+# Processing outputs
+*.json
+batch_summary.json
+*_metadata.json
+processing.log
 
 # Log files
 *.log
