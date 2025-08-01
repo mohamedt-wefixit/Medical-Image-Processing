@@ -43,8 +43,8 @@ Thumbs.db
 synthetic_training_data/
 synthetic_dataset/
 runs/
-checkpoints/*
-!checkpoints/best_checkpoint.pth
+# Allow tracking checkpoint files with Git LFS
+# checkpoints/
 *.nii
 *.nii.gz
 *.log
