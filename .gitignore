@@ -43,7 +43,8 @@ Thumbs.db
 synthetic_training_data/
 synthetic_dataset/
 runs/
-checkpoints/
+checkpoints/*
+!checkpoints/best_checkpoint.pth
 *.nii
 *.nii.gz
 *.log
