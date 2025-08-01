@@ -1,7 +1,3 @@
-# 6-DOF Medical Image Registration Model
-
-A deep learning model for predicting 6 degrees of freedom (3 rotations, 3 translations) from transformed medical images.
-
 ## Quick Start
 
 ### Test the Pre-trained Model
@@ -51,12 +47,12 @@ The notebook contains detailed instructions and will guide you through each step
 ## Performance
 
 The pre-trained model achieves:
-- Rotation accuracy: ~7-11 degrees
-- Translation accuracy: ~2-5 mm
+- Rotation accuracy: 7-9 degrees
+- Translation accuracy: 2-5 mm
 
 With GPU training on full resolution (128×128×64), you can expect:
-- Rotation accuracy: ~5-7 degrees
-- Translation accuracy: ~1-2 mm
+- Rotation accuracy: 5-7 degrees
+- Translation accuracy: 1-2 mm
 
 ## Configuration Options
 
@@ -69,14 +65,6 @@ With GPU training on full resolution (128×128×64), you can expect:
 - **Transformation Range**: Adjust `rotation_range` and `translation_range`
 - **Data Volume**: Change `variants_per_image` (recommend 50-100)
 
-## Requirements
-
-- Python 3.8+
-- PyTorch 2.0+
-- nibabel
-- scipy
-- numpy
-- pyyaml
 
 Install dependencies with:
 ```bash
