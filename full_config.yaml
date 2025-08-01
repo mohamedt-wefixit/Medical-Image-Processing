@@ -1,0 +1,24 @@
+model:
+  input_size: [256, 256, 128]  # Full resolution
+  dropout_rate: 0.3
+
+training:
+  batch_size: 2  # Optimized for most hardware
+  num_epochs: 200  # More epochs for full training
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  val_split: 0.2
+  num_workers: 0  # Single process for stability
+  log_interval: 10
+  log_dir: "runs/full_production_training"
+  checkpoint_dir: "checkpoints"
+  early_stopping:
+    enabled: true
+    patience: 25  # More patience for full dataset
+  mixed_precision: false  # Disable for compatibility
+  gradient_accumulation: 4  # Effective batch size = 8
+
+data:
+  metadata_dir: "synthetic_training_data"
+  target_size: [256, 256, 128]  # Full resolution
+  cache_size: 100  # Cache for faster training 

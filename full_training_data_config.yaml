@@ -1,5 +1,5 @@
 dataset:
-  batch_size: 5
+  batch_size: 2
   extensions:
   - .nii
   - .nii.gz
@@ -9,9 +9,9 @@ output_dir: synthetic_training_data
 sample:
   add_noise: false
   dimensions:
+  - 256
+  - 256
   - 128
-  - 128
-  - 64
   enabled: false
   noise_level: 0.05
   voxel_size:
@@ -19,12 +19,12 @@ sample:
   - 1.0
   - 1.0
 transformations:
-  max_dof_modified: 3
+  max_dof_modified: 4  # Allow more DOF modifications
   min_dof_modified: 1
   rotation_range:
-  - -45
-  - 45
+  - -60  # Wide rotation range for robust training
+  - 60
   translation_range:
-  - -20
-  - 20
-  variants_per_image: 50
+  - -25  # Wide translation range
+  - 25
+  variants_per_image: 100  # Full training: 100 variants per image 
