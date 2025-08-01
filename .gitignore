@@ -43,8 +43,10 @@ Thumbs.db
 synthetic_training_data/
 synthetic_dataset/
 runs/
-# Temporarily exclude all checkpoints for initial push
 checkpoints/
 *.nii
 *.nii.gz
-*.log 
+*.log
+
+# Dataset
+MM-WHS 2017 Dataset/ 
