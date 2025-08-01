@@ -43,9 +43,8 @@ Thumbs.db
 synthetic_training_data/
 synthetic_dataset/
 runs/
-# Keep best checkpoint for the trained model
-# checkpoints/
-checkpoints/latest_checkpoint.pth
+# Temporarily exclude all checkpoints for initial push
+checkpoints/
 *.nii
 *.nii.gz
 *.log 
