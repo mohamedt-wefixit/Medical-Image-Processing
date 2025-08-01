@@ -43,8 +43,9 @@ Thumbs.db
 synthetic_training_data/
 synthetic_dataset/
 runs/
-# Keep checkpoints folder for the trained model
+# Keep best checkpoint for the trained model
 # checkpoints/
+checkpoints/latest_checkpoint.pth
 *.nii
 *.nii.gz
 *.log 
