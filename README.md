@@ -192,6 +192,34 @@ This model is suitable for:
 - **Preprocessing**: Standardizing image orientations before analysis
 - **Research**: Quantifying anatomical variations and movements
 
+## RAS Orientation Enforcement
+
+The model now enforces RAS+ orientation (Right-Anterior-Superior) on all input images:
+
+- **Automatic Conversion**: All images are automatically converted to RAS+ orientation before processing
+- **Standardized Coordinates**: Ensures consistent coordinate system across different scanners and acquisition protocols
+- **Improved Accuracy**: Eliminates orientation-related errors in 6-DOF estimation
+- **Clinical Standard**: RAS+ is the standard orientation for neuroimaging
+
+To use this feature directly:
+
+```python
+from medical_image_generator import MedicalImageProcessor
+import nibabel as nib
+
+# Load image
+img = nib.load("your_image.nii.gz")
+
+# Create processor
+processor = MedicalImageProcessor(config={})
+
+# Enforce RAS orientation
+ras_img = processor.enforce_ras_orientation(img)
+
+# Save RAS-oriented image
+nib.save(ras_img, "ras_image.nii.gz")
+```
+
 ## License
 
 This project is for research and educational purposes.

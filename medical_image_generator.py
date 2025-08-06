@@ -109,6 +109,41 @@ class MedicalImageProcessor:
         
         return rotation_angles, translation
     
+    def enforce_ras_orientation(self, img: nib.Nifti1Image) -> nib.Nifti1Image:
+        """
+        Enforce RAS+ orientation (Right-Anterior-Superior) on the image.
+        This is the standard orientation for neuroimaging.
+        
+        Args:
+            img: Input NIfTI image
+            
+        Returns:
+            NIfTI image with RAS+ orientation
+        """
+        # Get current orientation
+        orig_ornt = nib.io_orientation(img.affine)
+        
+        # Target orientation is RAS (Right, Anterior, Superior)
+        # The corresponding codes in nibabel are (L->R, P->A, I->S) = (0, 1, 2)
+        # with sign (1, 1, 1) for RAS+
+        target_ornt = np.array([[0, 1], [1, 1], [2, 1]])
+        
+        # Find the transform from current to target orientation
+        transform = nib.orientations.ornt_transform(orig_ornt, target_ornt)
+        
+        # Apply the transform
+        reoriented_data = nib.orientations.apply_orientation(img.get_fdata(), transform)
+        
+        # Create new affine for the reoriented data
+        affine = img.affine.dot(nib.orientations.inv_ornt_aff(transform, img.shape))
+        
+        # Create new image with reoriented data and updated affine
+        reoriented_img = nib.Nifti1Image(reoriented_data, affine, img.header)
+        
+        self.logger.info(f"Enforced RAS+ orientation. Original orientation: {orig_ornt}")
+        
+        return reoriented_img
+    
     def create_affine(self, rotation_angles: np.ndarray, translation: np.ndarray, 
                      original_affine: np.ndarray) -> np.ndarray:
         r = R.from_euler('xyz', rotation_angles, degrees=True)
@@ -166,6 +201,10 @@ class MedicalImageProcessor:
             img = nib.load(input_path)
             self.logger.info(f"Processing: {input_path}")
             self.logger.info(f"Shape: {img.shape}, dtype: {img.get_data_dtype()}")
+            
+            # Enforce RAS orientation before processing
+            img = self.enforce_ras_orientation(img)
+            self.logger.info("Image converted to RAS+ orientation")
             
             original_rotation, original_translation = self.extract_6dof(img.affine)
             self.logger.info(f"Original 6-DOF: rot={original_rotation}, trans={original_translation}")

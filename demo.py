@@ -1,152 +1,149 @@
 #!/usr/bin/env python3
 """
-Demo script showing how to use the trained 6-DOF regression model
+Demo script for the 6-DOF regression model.
+This script loads the trained model and makes predictions on new images.
 """
 
 import os
+import sys
 import torch
 import numpy as np
 import nibabel as nib
 from pathlib import Path
-import json
+from typing import Union, Tuple, List, Dict
+from dof_regressor_model import DOF3DCNN, preprocess_image
 
-# Import our model
-from dof_regressor_model import DOF3DCNN, MedicalImageDataset
-
-def load_trained_model(model_path: str, input_size=(128, 128, 64)):
-    """Load a trained model from checkpoint"""
-    print(f"📂 Loading model from: {model_path}")
+def enforce_ras_orientation(img: nib.Nifti1Image) -> nib.Nifti1Image:
+    """
+    Enforce RAS+ orientation (Right-Anterior-Superior) on the image.
+    This is the standard orientation for neuroimaging.
     
-    # Create model with same architecture
-    model = DOF3DCNN(input_size=input_size, dropout_rate=0.3)
+    Args:
+        img: Input NIfTI image
+        
+    Returns:
+        NIfTI image with RAS+ orientation
+    """
+    # Get current orientation
+    orig_ornt = nib.io_orientation(img.affine)
+    
+    # Target orientation is RAS (Right, Anterior, Superior)
+    # The corresponding codes in nibabel are (L->R, P->A, I->S) = (0, 1, 2)
+    # with sign (1, 1, 1) for RAS+
+    target_ornt = np.array([[0, 1], [1, 1], [2, 1]])
+    
+    # Find the transform from current to target orientation
+    transform = nib.orientations.ornt_transform(orig_ornt, target_ornt)
+    
+    # Apply the transform
+    reoriented_data = nib.orientations.apply_orientation(img.get_fdata(), transform)
+    
+    # Create new affine for the reoriented data
+    affine = img.affine.dot(nib.orientations.inv_ornt_aff(transform, img.shape))
+    
+    # Create new image with reoriented data and updated affine
+    reoriented_img = nib.Nifti1Image(reoriented_data, affine, img.header)
+    
+    print(f"Enforced RAS+ orientation. Original orientation: {orig_ornt}")
+    
+    return reoriented_img
+
+def load_trained_model(checkpoint_path: str) -> torch.nn.Module:
+    """
+    Load a trained model from a checkpoint file
+    
+    Args:
+        checkpoint_path: Path to the checkpoint file
+        
+    Returns:
+        Trained model
+    """
+    # Determine device
+    device = torch.device('cuda' if torch.cuda.is_available() else 
+                         'mps' if torch.backends.mps.is_available() else 
+                         'cpu')
+    
+    print(f"Using device: {device}")
     
     # Load checkpoint
-    checkpoint = torch.load(model_path, map_location='cpu')
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    
+    # Get model configuration
+    input_size = checkpoint.get('input_size', (256, 256, 128))
+    dropout_rate = checkpoint.get('dropout_rate', 0.3)
+    
+    # Create model with same architecture
+    model = DOF3DCNN(input_size=input_size, dropout_rate=dropout_rate).to(device)
+    
+    # Load trained weights
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     
-    print(f"✅ Model loaded successfully!")
-    print(f"   - Trained for {checkpoint.get('epoch', 'unknown')} epochs")
-    print(f"   - Final loss: {checkpoint.get('val_loss', checkpoint.get('loss', 'unknown'))}")
+    print(f"Model loaded from checkpoint at epoch {checkpoint['epoch']}")
+    print(f"Validation loss: {checkpoint['val_loss']:.4f}")
     
     return model
 
-def predict_6dof(model, image_path: str, target_size=(128, 128, 64)):
-    """Predict 6-DOF transformation from a medical image"""
-    print(f"\n🔍 Analyzing image: {Path(image_path).name}")
+def predict_6dof(model: torch.nn.Module, image_path: str) -> np.ndarray:
+    """
+    Predict 6-DOF parameters for a given image
     
-    # Load and preprocess image
+    Args:
+        model: Trained model
+        image_path: Path to the NIfTI image file
+        
+    Returns:
+        Predicted 6-DOF parameters [rx, ry, rz, tx, ty, tz]
+    """
+    # Load image
     img = nib.load(image_path)
-    data = img.get_fdata()
     
-    print(f"   Original size: {data.shape}")
+    # Enforce RAS orientation
+    img = enforce_ras_orientation(img)
     
-    # Create dataset for single image (handles preprocessing)
-    dataset = MedicalImageDataset([image_path], [np.zeros(6)], target_size=target_size, normalize=True)
-    processed_data, _ = dataset[0]
+    # Preprocess image
+    input_tensor = preprocess_image(img, model.input_size)
     
-    # Add batch dimension
-    input_tensor = processed_data.unsqueeze(0)
+    # Move to same device as model
+    device = next(model.parameters()).device
+    input_tensor = input_tensor.to(device)
     
-    # Predict
+    # Make prediction
     with torch.no_grad():
-        prediction = model(input_tensor)
-        dof_pred = prediction.cpu().numpy()[0]
+        output = model(input_tensor)
     
-    print(f"   Processed size: {processed_data.shape}")
-    print(f"   📊 Predicted 6-DOF:")
-    print(f"      Rotations (degrees): RX={dof_pred[0]:.2f}°, RY={dof_pred[1]:.2f}°, RZ={dof_pred[2]:.2f}°")
-    print(f"      Translations (mm):   TX={dof_pred[3]:.2f}mm, TY={dof_pred[4]:.2f}mm, TZ={dof_pred[5]:.2f}mm")
+    # Convert to numpy array
+    prediction = output.cpu().numpy()[0]
     
-    return dof_pred
-
-def demo_with_synthetic_data():
-    """Demo using synthetic test data"""
-    print("\n🧪 Demo with synthetic test data...")
-    
-    # Look for synthetic test data
-    test_data_dir = Path("synthetic_test_data")
-    if not test_data_dir.exists():
-        print("❌ No synthetic test data found. Generate some first with:")
-        print("   python evaluate_model.py --generate-test-data")
-        return
-    
-    # Find test metadata
-    metadata_files = list(test_data_dir.glob("*_metadata.json"))
-    if not metadata_files:
-        print("❌ No test metadata found.")
-        return
-    
-    # Load first test sample
-    with open(metadata_files[0], 'r') as f:
-        metadata = json.load(f)
-    
-    if not metadata['variants']:
-        print("❌ No test variants found.")
-        return
-    
-    # Get first variant
-    variant = metadata['variants'][0]
-    image_path = variant['output_file']
-    true_rotation = variant['applied_rotation']
-    true_translation = variant['applied_translation']
-    
-    if not os.path.exists(image_path):
-        print(f"❌ Test image not found: {image_path}")
-        return
-    
-    print(f"   📋 Ground truth:")
-    print(f"      Rotations (degrees): RX={true_rotation[0]:.2f}°, RY={true_rotation[1]:.2f}°, RZ={true_rotation[2]:.2f}°")
-    print(f"      Translations (mm):   TX={true_translation[0]:.2f}mm, TY={true_translation[1]:.2f}mm, TZ={true_translation[2]:.2f}mm")
-    
-    return image_path, np.array(true_rotation + true_translation)
+    return prediction
 
 def main():
-    """Main demo function"""
-    print("🚀 Medical Image 6-DOF Regression - Demo")
-    print("=" * 50)
+    """Main function"""
+    if len(sys.argv) < 2:
+        print("Usage: python demo.py <path_to_image.nii.gz>")
+        sys.exit(1)
     
-    # Check for trained model
-    model_path = "checkpoints/best_checkpoint.pth"
-    if not os.path.exists(model_path):
-        print(f"❌ Trained model not found: {model_path}")
-        print("\n📝 Please train the model first:")
-        print("   1. Generate training data: python generate_training_data.py")
-        print("   2. Train model: python dof_regressor_model.py")
-        print("   3. Run this demo again")
-        return
+    image_path = sys.argv[1]
+    checkpoint_path = 'checkpoints/best_checkpoint.pth'
     
-    # Load trained model
-    try:
-        model = load_trained_model(model_path)
-    except Exception as e:
-        print(f"❌ Error loading model: {e}")
-        return
-    
-    # Demo with synthetic test data
-    demo_result = demo_with_synthetic_data()
-    if demo_result:
-        test_image_path, true_dof = demo_result
-        predicted_dof = predict_6dof(model, test_image_path)
+    if not os.path.exists(image_path):
+        print(f"Error: Image file not found: {image_path}")
+        sys.exit(1)
         
-        # Calculate accuracy
-        errors = np.abs(predicted_dof - true_dof)
-        print(f"\n📊 Prediction Accuracy:")
-        print(f"   Rotation errors: RX={errors[0]:.2f}°, RY={errors[1]:.2f}°, RZ={errors[2]:.2f}°")
-        print(f"   Translation errors: TX={errors[3]:.2f}mm, TY={errors[4]:.2f}mm, TZ={errors[5]:.2f}mm")
-        print(f"   Mean absolute error: {np.mean(errors):.2f}")
-        
-        if np.mean(errors) < 10:
-            print("   🎉 Excellent accuracy!")
-        elif np.mean(errors) < 30:
-            print("   ✅ Good accuracy!")
-        else:
-            print("   ⚠️ Model may need more training")
+    if not os.path.exists(checkpoint_path):
+        print(f"Error: Checkpoint file not found: {checkpoint_path}")
+        sys.exit(1)
     
-    print(f"\n💡 Usage for new images:")
-    print(f"   from demo import load_trained_model, predict_6dof")
-    print(f"   model = load_trained_model('checkpoints/best_checkpoint.pth')")
-    print(f"   dof = predict_6dof(model, 'your_image.nii.gz')")
+    # Load model
+    model = load_trained_model(checkpoint_path)
+    
+    # Make prediction
+    prediction = predict_6dof(model, image_path)
+    
+    # Print results
+    print("\nPredicted 6-DOF parameters:")
+    print(f"Rotation (degrees): [{prediction[0]:.2f}, {prediction[1]:.2f}, {prediction[2]:.2f}]")
+    print(f"Translation (mm): [{prediction[3]:.2f}, {prediction[4]:.2f}, {prediction[5]:.2f}]")
 
 if __name__ == "__main__":
     main() 

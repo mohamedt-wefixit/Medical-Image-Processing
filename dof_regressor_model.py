@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 from torch.utils.tensorboard import SummaryWriter
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
@@ -528,7 +528,52 @@ class DOFTrainer:
         plt.show()
 
 
-def load_training_config(config_path: str = "training_config.yaml") -> Dict:
+def preprocess_image(img: nib.Nifti1Image, target_size: Tuple[int, int, int]) -> torch.Tensor:
+    """
+    Preprocess a NIfTI image for model input.
+    
+    Args:
+        img: Input NIfTI image
+        target_size: Target size (depth, height, width)
+        
+    Returns:
+        Preprocessed image tensor ready for model input
+    """
+    # Get image data
+    data = img.get_fdata()
+    
+    # Normalize to [0, 1]
+    data_min = np.min(data)
+    data_max = np.max(data)
+    if data_max > data_min:
+        data = (data - data_min) / (data_max - data_min)
+    
+    # Resize to target size if needed
+    if data.shape != target_size:
+        # Create temporary tensor
+        temp = torch.from_numpy(data).float()
+        
+        # Add batch and channel dimensions
+        temp = temp.unsqueeze(0).unsqueeze(0)
+        
+        # Resize using interpolation
+        temp = F.interpolate(temp, size=target_size, mode='trilinear', align_corners=False)
+        
+        # Remove batch dimension but keep channel dimension
+        data = temp.squeeze(0).numpy()
+    else:
+        # Add channel dimension
+        data = data[np.newaxis, ...]
+    
+    # Convert to tensor
+    tensor = torch.from_numpy(data).float()
+    
+    # Add batch dimension
+    tensor = tensor.unsqueeze(0)
+    
+    return tensor
+
+def load_training_config(config_path: str = "full_config.yaml") -> Dict:
     """Load training configuration"""
     default_config = {
         'model': {
